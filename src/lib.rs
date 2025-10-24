@@ -1,10 +1,8 @@
 use std::fs::OpenOptions;
 use std::io::{self, BufRead, BufReader, Write};
-use std::process::{Command, Stdio};
-use std::thread::sleep;
-use std::time::Duration;
 
 use anyhow::{Context, Error, Result};
+use duct::cmd;
 use mail_parser::MessageParser;
 
 const NEOMUTT_XDG_CONFIG_DIR: &str = ".config/neomutt";
@@ -73,13 +71,7 @@ impl Midnight {
         let address = self.authenticate()?;
         let path = format!("{}/{}", env!("HOME"), NEOMUTT_XDG_CONFIG_DIR);
         let rc = format!("{}/neomuttrc", path);
-
-        let fork = Command::new("rg")
-            .args(vec!["-l", "-g", "!tmp", &address, &path])
-            .output()?;
-
-        let account = String::from(str::from_utf8(&fork.stdout)?.trim());
-
+        let account = String::from(cmd!("rg", "-l", "-g", "!tmp", &address, &path).read()?);
         Ok((rc, account))
     }
 
@@ -110,29 +102,20 @@ impl Midnight {
             account
         ));
 
-        let mut fork = Command::new("at")
-            .args(vec!["-m", "-q", "m", &self.at])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()?;
+        let cmd = cmd!("at", "-m", "-q", "m", &self.at);
+        let reader = cmd.stdin_bytes(echo_cmd).stderr_to_stdout().reader()?; // {
 
-        let mut stdin = fork
-            .stdin
-            .take()
-            .context("Could not open stdin of child process")?;
-        stdin.write_all(echo_cmd.as_bytes())?;
-
-        sleep(Duration::from_millis(100));
-        let status = match fork.try_wait()? {
-            Some(status) => status.code().unwrap_or(0),
-            None => 0,
+        let reader = BufReader::new(reader);
+        let job = match reader.lines().last() {
+            Some(job) => job?,
+            None => {
+                return Err(Error::msg(
+                    "Invalid time, could not schedule mail for delivery",
+                ));
+            }
         };
-        if status != 0 {
-            return Err(Error::msg(
-                "Invalid time, could not schedule mail for delivery",
-            ));
-        }
+
+        println!("{}", job.split(" ").collect::<Vec<&str>>()[1]);
 
         Ok(())
     }

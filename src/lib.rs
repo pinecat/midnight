@@ -5,22 +5,29 @@ use anyhow::{Context, Error, Result};
 use duct::cmd;
 use mail_parser::MessageParser;
 
+/// Defualt (hardcoded) config dir for neomutt
 const NEOMUTT_XDG_CONFIG_DIR: &str = ".config/neomutt";
 
 #[derive(Clone, Debug)]
 pub struct Midnight {
+    /// The raw message (mail)
     raw: String,
+    /// The time at which to send the message, specified in a time reconizable to at(1)
     at: String,
 }
 
+/// Object to hold raw message and time at which to send said message.
 impl Midnight {
+    /// Create a new instance of the Midnight object, which holds a raw message string, alongside a
+    /// time at which to send the message. Initializes reading mail from STDIN, and also getting
+    /// user input from the TTY.
     pub fn new() -> Result<Self> {
         let raw = Midnight::drain_pipe()?;
         let at = Midnight::drain_at()?;
-
         Ok(Self { raw, at })
     }
 
+    /// Read in piped input from STDIN (in this case, the raw mail message).
     fn drain_pipe() -> Result<String> {
         let mut buffer = String::new();
         let stdin = io::stdin();
@@ -32,6 +39,8 @@ impl Midnight {
         Ok(buffer)
     }
 
+    /// Read input from user in a TTY (need to specifically use /dev/tty since we are using STDIN
+    /// for piped input).
     fn drain_at() -> Result<String> {
         let mut buffer = String::new();
         let stdin = OpenOptions::new().read(true).open("/dev/tty")?;
@@ -45,7 +54,8 @@ impl Midnight {
         Ok(buffer)
     }
 
-    fn authenticate(&self) -> Result<String> {
+    /// Parse the raw message to retrieve the sender (user might have multiple accounts).
+    pub fn sender(&self) -> Result<String> {
         // Parse the message
         let message = MessageParser::default()
             .parse(&self.raw)
@@ -67,14 +77,18 @@ impl Midnight {
         Ok(address)
     }
 
+    /// Figure out what file(s) to source based off the sender. See [Midnight::sender] for
+    /// more details. Right now, this assumes that you have a different file for each account you
+    /// use in neomutt.
     pub fn forkauth(&self) -> Result<(String, String)> {
-        let address = self.authenticate()?;
+        let address = self.sender()?;
         let path = format!("{}/{}", env!("HOME"), NEOMUTT_XDG_CONFIG_DIR);
         let rc = format!("{}/neomuttrc", path);
         let account = String::from(cmd!("rg", "-l", "-g", "!tmp", &address, &path).read()?);
         Ok((rc, account))
     }
 
+    /// Escape any single quotes (') for the echo command.
     fn escape(&self) -> String {
         let mut indicies = Vec::new();
         let mut count = 0;
@@ -93,6 +107,7 @@ impl Midnight {
         buffer
     }
 
+    /// Queue a mail to send at a later time.
     pub fn enqueue(&self) -> Result<()> {
         let (rc, account) = self.forkauth()?;
         let echo_cmd = String::from(format!(

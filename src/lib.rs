@@ -23,23 +23,27 @@ impl Edible for String {
     }
 }
 
+/// Object to hold raw message, the messages' unique ID, and time at which to send said message.
 #[derive(Clone, Debug)]
 pub struct Midnight {
     /// The raw message (mail)
     raw: String,
+    /// Unique message ID
+    id: String,
     /// The time at which to send the message, specified in a time reconizable to at(1)
     at: String,
 }
 
-/// Object to hold raw message and time at which to send said message.
+/// Implement functions for Midnight.
 impl Midnight {
-    /// Create a new instance of the Midnight object, which holds a raw message string, alongside a
-    /// time at which to send the message. Initializes reading mail from STDIN, and also getting
-    /// user input from the TTY.
+    /// Create a new instance of the Midnight object, which holds a raw message string, alongside
+    /// the unique messasge ID, and a time at which to send the message. Initializes reading mail
+    /// from STDIN, and also getting user input from the TTY.
     pub fn new() -> Result<Self> {
         let raw = Midnight::drain_pipe()?;
+        let id = Midnight::id(&raw)?;
         let at = Midnight::drain_at()?;
-        Ok(Self { raw, at })
+        Ok(Self { raw, id, at })
     }
 
     /// Read in piped input from STDIN (in this case, the raw mail message).
@@ -65,6 +69,18 @@ impl Midnight {
         reader.read_line(&mut buffer)?;
         buffer.chomp();
         Ok(buffer)
+    }
+
+    /// Parse the unique message ID from a raw String.
+    pub fn id(raw: &String) -> Result<String> {
+        let message = MessageParser::default()
+            .parse(raw)
+            .context("Unable to parse input as an RFC 5322 MIME message")?;
+
+        match message.message_id() {
+            Some(id) => Ok(id.to_owned()),
+            _ => Err(anyhow!("Not message ID was found")),
+        }
     }
 
     /// Parse the raw message to retrieve the sender (user might have multiple accounts).

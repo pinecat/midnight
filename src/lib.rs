@@ -1,9 +1,11 @@
-use std::fs::OpenOptions;
+use std::collections::HashMap;
+use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
 
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Error, Result, anyhow};
 use duct::cmd;
 use mail_parser::MessageParser;
+use regex::Regex;
 
 /// Defualt (hardcoded) config dir for neomutt
 const NEOMUTT_XDG_CONFIG_DIR: &str = ".config/neomutt";
@@ -69,6 +71,94 @@ impl Midnight {
         reader.read_line(&mut buffer)?;
         buffer.chomp();
         Ok(buffer)
+    }
+
+    /// Uses [Midnight::forkauth] to get the account file, then searches that file for the
+    /// following lines:
+    ///
+    /// ```
+    /// set folder = "<path-to-root-level-maildir>"
+    /// set postponed = "<relative-path-to-draftbox>"
+    /// ```
+    ///
+    /// It is not difficult to see there are some assumptions being made here, which may not work
+    /// for all neomutt configs. First of all, it assumes that the config has a separate file for
+    /// each account that the user accesses with neomutt. Second, it assumes that the user is
+    /// settings both the `folder` and `postponed` options within that same account file.
+    ///
+    /// If all those assumptions fall into place, however, the function will grab the
+    /// root-level-maildir (folder) and concat it with the maildir folder (new, cur, tmp) inside
+    /// the draftbox (postponed) maildir, and return those three paths.
+    pub fn maildir(&self) -> Result<Vec<String>> {
+        let re = Regex::new(r#"set (folder|postponed) = "([^"]*)""#)?;
+        let (_, account_file) = self.forkauth()?;
+        let file = File::open(account_file)?;
+        let reader = BufReader::new(file);
+        let mut map: HashMap<String, String> = HashMap::new();
+        for line in reader.lines() {
+            let line = line?;
+            if let Some(caps) = re.captures(&line) {
+                map.insert(caps[1].to_string(), caps[2].to_string());
+            }
+        }
+
+        let folder = match map.get("folder") {
+            Some(folder) => folder.replace(|c: char| c == '~', env!("HOME")),
+            None => {
+                return Err(anyhow!(
+                    "You must specify the top-level maildir in your account file"
+                ));
+            }
+        };
+
+        let postponed = match map.get("postponed") {
+            Some(postponed) => postponed.replace(|c: char| !c.is_alphanumeric(), ""),
+            None => {
+                return Err(anyhow!(
+                    "You must specify the postponed maildir in your account file"
+                ));
+            }
+        };
+
+        Ok(vec![
+            String::from(format!("{}/{}/new", folder, postponed)),
+            String::from(format!("{}/{}/cur", folder, postponed)),
+            String::from(format!("{}/{}/tmp", folder, postponed)),
+        ])
+    }
+
+    /// Search for a draft, matching on the unique message ID stored in the object. Gets search
+    /// paths from the [Midnight::maildir] function. Function returns the full path of the draft on
+    /// disk, if a match is found.
+    pub fn search_drafts(&self) -> Result<String> {
+        let folders = self.maildir()?;
+
+        let mut path = String::new();
+        for folder in folders {
+            let drafts = fs::read_dir(folder)?;
+            for draft in drafts {
+                let draft = draft?;
+                let raw = fs::read_to_string(draft.path())?;
+                let msg = match MessageParser::default().parse(&raw) {
+                    Some(msg) => msg,
+                    None => continue,
+                };
+                let id = match msg.message_id() {
+                    Some(id) => id.to_owned(),
+                    None => continue,
+                };
+
+                if id == self.id {
+                    path = draft.path().to_string_lossy().to_string();
+                }
+            }
+        }
+
+        if path.is_empty() {
+            return Err(anyhow!("Could not get path of message on disk"));
+        }
+
+        Ok(path)
     }
 
     /// Parse the unique message ID from a raw String.

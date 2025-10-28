@@ -8,6 +8,21 @@ use mail_parser::MessageParser;
 /// Defualt (hardcoded) config dir for neomutt
 const NEOMUTT_XDG_CONFIG_DIR: &str = ".config/neomutt";
 
+/// Trait to implement chomp (removes newline from end of a [String], if there is one). Inspired by
+/// Ruby's chomp. If it's edible, you can chomp it!
+trait Edible {
+    fn chomp(&mut self);
+}
+
+/// Simple implementation for chomp on a [String].
+impl Edible for String {
+    fn chomp(&mut self) {
+        if let Some('\n') = self.chars().next_back() {
+            self.pop();
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Midnight {
     /// The raw message (mail)
@@ -48,9 +63,7 @@ impl Midnight {
         print!("What time? ");
         io::stdout().flush()?;
         reader.read_line(&mut buffer)?;
-        if let Some('\n') = buffer.chars().next_back() {
-            buffer.pop();
-        }
+        buffer.chomp();
         Ok(buffer)
     }
 

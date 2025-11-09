@@ -3,5 +3,5 @@ use midnight::Midnight;
 
 fn main() -> Result<()> {
     Midnight::flags()?;
-    Midnight::enqueue()
+    Midnight::send()
 }

@@ -1,6 +1,6 @@
 [package]
 name = "midnight"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 license = "MIT"
 description = "Send mail later via batch queueing"
@@ -12,10 +12,26 @@ path = "src/bin/midnight.rs"
 
 [[bin]]
 name = "mn"
-path = "src/bin/midnight.rs"
+path = "src/bin/mn.rs"
+
+[[bin]]
+name = "mnq"
+path = "src/bin/mnq.rs"
+
+[[bin]]
+name = "mnrm"
+path = "src/bin/mnrm.rs"
+
+[[bin]]
+name = "mnsend"
+path = "src/bin/mnsend.rs"
 
 [dependencies]
 anyhow = "1.0.100"
+constcat = "0.6.1"
+csv = "1.4.0"
 duct = "1.1.0"
+flager = "0.0.9"
 mail-parser = "0.11.1"
 regex = "1.12.2"
+serde = { version = "1.0.228", features = ["derive"] }

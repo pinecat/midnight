@@ -19,7 +19,7 @@ impl Midnight {
     pub fn flags() -> Result<()> {
         let parser = Parser::new();
 
-        let help_msg = "Print help message then quit";
+        let help_msg = "Print this help message then quit";
         let queue_msg = "List items in queue (alias for 'mnq')";
         let remove_msg = "Remove item from queue via job ID (alias for 'mnrm')";
         let send_msg = "Send message in queue via message ID (alias for 'mnsend')";
@@ -32,13 +32,15 @@ impl Midnight {
         let version_flag: Flag<bool> = new_flag!("-V", "--version").help(version_msg);
 
         if parser.parse(&help_flag).unwrap() == true {
-            println!("midnight: Send mail later via batch queueing");
+            println!("midnight");
+            println!("\tSend mail later via batch queueing");
             println!();
-            println!("Usage: <message> | midnight");
-            println!("Usage: <message> | mn");
-            println!("Usage: mnq");
-            println!("Usage: mnrm <jobid>");
-            println!("Usage: <message_id> | mnsend");
+            println!("Usage:");
+            println!("\t<message> | midnight");
+            println!("\t<message> | mn");
+            println!("\tmnq");
+            println!("\tmnrm <jobid>");
+            println!("\t<message_id> | mnsend");
             println!();
             println!("Options:");
             println!("\t-h, --help\t{}", help_msg);

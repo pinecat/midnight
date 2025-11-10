@@ -15,9 +15,26 @@ cargo install midnight
 ### From source
 
 ```sh
-git clone git@library.cat:rory/midnight
+git clone https://library.cat/rory/midnight
 cd midnight
 cargo install --path .
+```
+
+### Runtime dependencies
+
+You will also need `ripgrep` and `at` on your system. If you do not have
+them, grab them from your package manager. Or, if you prefer, you can
+install `ripgrep` using cargo.
+
+```sh
+cargo install ripgrep
+```
+
+If you are on macOS, the `at` daemon is not enabled by default, so you
+will need to run the following command to enable and start it:
+
+```
+sudo launchctl enable system/com.apple.atrun
 ```
 
 ### Configuration
@@ -54,10 +71,47 @@ this yourself before relying on it.
 
 ## Usage
 
+### Programs
+
+Installing midnight will give you access to the following programs:
+
+- `midnight`: Used to add a message to the queue. Primarily intended to
+be used from neomutt via a macro. See the `Configuration` section
+above for details.
+- `mn`: Alias for `midnight`.
+- `mnq`: List mail that's been scheduled for delivery.
+- `mnrm`: Remove a scheduled mail from the queue by passing it's job ID
+(this ID appears in `mnq` as the first value, between square
+brackets).
+- `mnsend`: Send a message using a unique message ID. This program is
+not intended to be called by the user, but rather, is used by `midnight`
+internally when creating a new job in at(1).
+
+### Getting help
+
+You can run `midnight -h` to get a help menu that displays proper
+program usage, as well as some optional flags. The flags may be used
+with any of the binaries listed above, and may override that binary's
+default behavior.
+
+### Usage in neomutt
+
 On the compose screen, use `P` to postpone the message. Then, go to your
-drafts folder, and use the macro your set above to schedule the message
+drafts folder, and use the macro you set above to schedule the message
 to be sent later (or see the `Advanced configuration` section on
 possibly setting a macro to send later directly from the compose menu).
+You will be prompted to enter a time at which to schedule the message
+for delivery. You may enter any time that can be interpreted by at(1).
+For instance:
+
+- now + 10 minutes
+- 0600
+- 2:00pm
+- 1800 Jun 1 2030
+
+See `man at` for more details. If the time you enter is unable to be
+interpreted properly, the program will quit with an error message, and
+your email will not be added to the queue.
 
 ## Caveats
 
@@ -67,6 +121,12 @@ missing features for the time being:
 - No configuration options. If you want to change how the program
 invokes at, or ripgrep, for instance, you will have to change the source
 code for now.
+- If you are using multiple accounts in neomutt, midnight will assume
+that each account has it's own file. This is important for reading the
+correct `folder` and `postponed` values inside of your config. If you
+don't have separate files for each account, then for now, you will need
+to either refactor your config, or change the source code of the program
+so it works with your setup.
 - ~~There is no state management, so there is no way to tell what job in
 atq correponds to what message in drafts.~~ We have state manage now!
 `midnight` keeps some metadata in it's own queue file. By default, it's
@@ -85,7 +145,13 @@ delete the message in the user's draftbox after it is sent.
 ## Building
 
 ```sh
-git clone git@library.cat:rory/midnight
+git clone https://library.cat/rory/midnight
 cd midnight
 cargo build
 ```
+
+## Contributing
+
+This git forge is (currently) not open for public signups. If you'd like
+to contribute, please send your diffs inline to: rory AT mailbox DOT
+cat. Thank you!

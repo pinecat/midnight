@@ -37,7 +37,8 @@ impl Mua {
     pub fn account(from: &String) -> Result<(String, String)> {
         let path = format!("{}/{}", env::var("HOME")?, NEOMUTT_XDG_CONFIG_DIR);
         let rc = String::from(format!("{}/{}", env::var("HOME")?, RC));
-        let account = String::from(cmd!("rg", "-l", "-g", "!tmp", from, &path).read()?);
+        let account =
+            String::from(cmd!("rg", "-l", "-g", "!tmp", "-g", "!signatures", from, &path).read()?);
         Ok((rc, account))
     }
 

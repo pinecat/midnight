@@ -69,6 +69,22 @@ drafts box. However, this may not be the case for you, depending on some
 other options in your neomutt config. So, please be careful, and test
 this yourself before relying on it.
 
+### Draftboxes
+
+You may specify which draftbox an account is associated with, using a
+.draftboxes file. If you do not specify a .draftboxes files, `midnight`
+will grep around your neomutt config directory, and attempt to find the
+correct draftbox using the `postponed = ...` option inside a neomutt
+config file. If you use multiple accounts, you must have a separate file
+for each account for this to work properly. An example .draftboxes is
+below. Lines starting with '#' are comments.
+
+```
+# ~/.config/neomutt/.draftboxes
+noreply@example.com = ~/mail/example.com/drafts
+notarealaddress@crates.io = ~/mail/crates.io/draftbox
+```
+
 ## Usage
 
 ### Programs
@@ -149,9 +165,3 @@ git clone https://library.cat/rory/midnight
 cd midnight
 cargo build
 ```
-
-## Contributing
-
-This git forge is (currently) not open for public signups. If you'd like
-to contribute, please send your diffs inline to: rory AT mailbox DOT
-cat. Thank you!

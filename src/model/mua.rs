@@ -12,6 +12,7 @@ use regex::Regex;
 use crate::model::Message;
 use crate::model::Draftbox;
 
+/// No operation
 macro_rules! nop { () => { {}  }; }
 
 /// Default (hardcoded) config dir for neomutt

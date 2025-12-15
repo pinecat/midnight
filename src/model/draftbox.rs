@@ -41,6 +41,7 @@ impl Draftbox {
             .has_headers(false)
             .delimiter(b'=')
             .trim(Trim::All)
+            .comment(Some(b'#'))
             .from_path(Self::draftboxes_file()?)?;
         let mut draftboxes = vec![];
         for draftbox in reader.deserialize::<Draftbox>() {

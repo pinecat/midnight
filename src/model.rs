@@ -1,7 +1,9 @@
+mod draftbox;
 mod message;
 mod mua;
 mod pipe;
 mod record;
+pub use draftbox::Draftbox;
 pub use message::Message;
 pub use mua::Mua;
 pub use pipe::Pipe;

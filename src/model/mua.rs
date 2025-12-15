@@ -10,6 +10,9 @@ use mail_parser::MessageParser;
 use regex::Regex;
 
 use crate::model::Message;
+use crate::model::Draftbox;
+
+macro_rules! nop { () => { {}  }; }
 
 /// Default (hardcoded) config dir for neomutt
 pub const NEOMUTT_XDG_CONFIG_DIR: &str = ".config/neomutt";
@@ -28,7 +31,7 @@ impl Mua {
     /// `raw` file inside of the [Message].
     pub fn search(msg: &mut Message) -> Result<(String, String, String)> {
         let (rc, account) = Self::account(&msg.sender_addr)?;
-        let maildirs = Self::maildirs(&account)?;
+        let maildirs = Self::maildirs(&account, &msg.sender_addr)?;
         let (path, raw) = Self::draft(maildirs, &msg.id)?;
         msg.raw = raw;
         Ok((rc, account, path))
@@ -58,7 +61,15 @@ impl Mua {
     /// If all those assumptions fall into place, however, the function will grab the
     /// root-level-maildir (folder) and concat it with the maildir folder (new, cur, tmp) inside
     /// the draftbox (postponed) maildir, and return those three paths.
-    fn maildirs(account: &String) -> Result<Vec<String>> {
+    fn maildirs(account: &String, from: &String) -> Result<Draftbox> {
+        if Draftbox::exists() {
+            let draftboxes = Draftbox::load()?;
+            match draftboxes.iter().find(|d| d.address == *from) {
+                Some(draftbox) => return Ok(draftbox.to_owned()),
+                None => nop!(),
+            }
+        }
+
         let re = Regex::new(r#"set (folder|postponed) = "([^"]*)""#)?;
         let file = File::open(account)?;
         let reader = BufReader::new(file);
@@ -70,39 +81,27 @@ impl Mua {
             }
         }
 
-        let folder = match map.get("folder") {
-            Some(folder) => folder.replace(|c: char| c == '~', env!("HOME")),
-            None => {
-                return Err(anyhow!(
-                    "You must specify the top-level maildir in your account file"
-                ));
-            }
-        };
+        let folder = map
+            .get("folder")
+            .expect("You must specify the top-level maildir in your account file")
+            .replace(|c: char| c == '~', &env::var("HOME")?);
 
-        let postponed = match map.get("postponed") {
-            Some(postponed) => postponed.replace(|c: char| !c.is_alphanumeric(), ""),
-            None => {
-                return Err(anyhow!(
-                    "You must specify the postponed maildir in your account file"
-                ));
-            }
-        };
+        let postponed = map
+            .get("postponed")
+            .expect("You must specify the postponed maildir in your account file")
+            .replace(|c: char| !c.is_alphanumeric(), "");
 
-        Ok(vec![
-            String::from(format!("{}/{}/new", folder, postponed)),
-            String::from(format!("{}/{}/cur", folder, postponed)),
-            String::from(format!("{}/{}/tmp", folder, postponed)),
-        ])
+        Ok(Draftbox::new(from, &format!("{}/{}", folder, postponed)))
     }
 
     /// Search for a draft, matching on the unique message ID stored in the object
     ///
     /// Gets search paths from the [Self::maildirs] function. Function returns the full path of the
     /// draft on disk, alongside the contents of the message, if a match is found.
-    fn draft(maildirs: Vec<String>, id: &String) -> Result<(String, String)> {
+    fn draft(draftbox: Draftbox, id: &String) -> Result<(String, String)> {
         let mut path = String::new();
         let mut raw = String::new();
-        for maildir in maildirs {
+        for maildir in draftbox.folders() {
             let drafts = fs::read_dir(maildir)?;
             for draft in drafts {
                 let draft = draft?;

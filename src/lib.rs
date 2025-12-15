@@ -6,7 +6,6 @@ use duct::cmd;
 use flager::{Flag, Parser, new_flag};
 
 mod model;
-pub mod quirk;
 pub use model::Message;
 use model::Pipe;
 pub use model::Record;

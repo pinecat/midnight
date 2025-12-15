@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Result;
 
-use crate::quirk::Edible;
+use quirks::Edible;
 
 /// Work with input from $stdin
 pub struct Pipe;

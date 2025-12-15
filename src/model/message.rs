@@ -108,7 +108,7 @@ impl Message {
     pub fn enqueue(&self) -> Result<(String, String)> {
         let echo_cmd = String::from(format!("echo $'{}' | mnsend", self.id));
 
-        let mut args = vec!["-m", "-q", "m"];
+        let mut args = vec!["-q", "m"];
         self.at.split(" ").for_each(|arg| args.push(arg));
 
         let cmd = cmd("at", &args);

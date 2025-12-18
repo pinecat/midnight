@@ -7,13 +7,11 @@ use anyhow::{Result, anyhow};
 use constcat::concat;
 use duct::cmd;
 use mail_parser::MessageParser;
+use quirks::{Odyssey, nop};
 use regex::Regex;
 
-use crate::model::Message;
 use crate::model::Draftbox;
-
-/// No operation
-macro_rules! nop { () => { {}  }; }
+use crate::model::Message;
 
 /// Default (hardcoded) config dir for neomutt
 pub const NEOMUTT_XDG_CONFIG_DIR: &str = ".config/neomutt";

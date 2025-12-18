@@ -37,7 +37,6 @@ impl Pipe {
         }
         io::stdout().flush()?;
         reader.read_line(&mut buffer)?;
-        buffer.chomp();
-        Ok(buffer)
+        Ok(buffer.chomp())
     }
 }

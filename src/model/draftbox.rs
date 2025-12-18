@@ -3,6 +3,7 @@ use std::{env, fs};
 use anyhow::Result;
 use constcat::concat;
 use csv::Trim;
+use quirks::Odyssey;
 
 use crate::model::mua::NEOMUTT_XDG_CONFIG_DIR;
 
@@ -46,9 +47,7 @@ impl Draftbox {
         let mut draftboxes = vec![];
         for draftbox in reader.deserialize::<Draftbox>() {
             let mut draftbox = draftbox?;
-            draftbox.path = draftbox
-                .path
-                .replace(|c: char| c == '~', &env::var("HOME")?);
+            draftbox.path = draftbox.path.expand()?;
             draftboxes.push(draftbox);
         }
         Ok(draftboxes)

@@ -83,7 +83,7 @@ impl Mua {
         let folder = map
             .get("folder")
             .expect("You must specify the top-level maildir in your account file")
-            .replace(|c: char| c == '~', &env::var("HOME")?);
+            .expand()?;
 
         let postponed = map
             .get("postponed")

@@ -7,6 +7,7 @@ use flager::{Flag, Parser, new_flag};
 
 mod model;
 pub use model::Message;
+pub use model::Mua;
 use model::Pipe;
 pub use model::Record;
 

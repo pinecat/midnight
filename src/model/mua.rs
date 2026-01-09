@@ -1,13 +1,13 @@
 use std::collections::HashMap;
-use std::env;
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
+use std::{env, io};
 
 use anyhow::{Result, anyhow};
 use constcat::concat;
-use duct::cmd;
 use mail_parser::MessageParser;
-use quirks::{Odyssey, nop};
+use quirks::{Greppable, Ignorable, Odyssey, nop};
 use regex::Regex;
 
 use crate::model::Draftbox;
@@ -37,10 +37,14 @@ impl Mua {
     }
 
     pub fn account(from: &String) -> Result<(String, String)> {
-        let path = format!("{}/{}", env::var("HOME")?, NEOMUTT_XDG_CONFIG_DIR);
+        let path = PathBuf::from(format!("{}/{}", env::var("HOME")?, NEOMUTT_XDG_CONFIG_DIR));
         let rc = String::from(format!("{}/{}", env::var("HOME")?, RC));
-        let account =
-            String::from(cmd!("rg", "-l", "-g", "!tmp", "-g", "!signatures", from, &path).read()?);
+        let matches = path.grep(from)?.ignore(vec!["tmp", "signatures"]);
+        let account = matches
+            .iter()
+            .next()
+            .ok_or(io::Error::from(io::ErrorKind::Other))?
+            .to_owned();
         Ok((rc, account))
     }
 

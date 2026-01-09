@@ -112,7 +112,7 @@ impl Message {
         self.at.split(" ").for_each(|arg| args.push(arg));
 
         let cmd = cmd("at", &args);
-        let reader = cmd.stdin_bytes(echo_cmd).stderr_to_stdout().reader()?; // {
+        let reader = cmd.stdin_bytes(echo_cmd).stderr_to_stdout().reader()?;
 
         let reader = BufReader::new(reader);
         let job = match reader.lines().last() {

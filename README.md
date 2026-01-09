@@ -1,8 +1,7 @@
 # midnight
 
 Schedule emails to be sent at a later time via
-[at(1)](https://linux.die.net/man/1/at). For now, also depends on
-[ripgrep](https://github.com/BurntSushi/ripgrep).
+[at(1)](https://linux.die.net/man/1/at).
 
 ## Installation
 
@@ -22,13 +21,8 @@ cargo install --path .
 
 ### Runtime dependencies
 
-You will also need `ripgrep` and `at` on your system. If you do not have
-them, grab them from your package manager. Or, if you prefer, you can
-install `ripgrep` using cargo.
-
-```sh
-cargo install ripgrep
-```
+You will also need `at` on your system. If you do not have it, grab it
+from your package manager.
 
 If you are on macOS, the `at` daemon is not enabled by default, so you
 will need to run the following command to enable and start it:
@@ -134,15 +128,18 @@ your email will not be added to the queue.
 This software is in a beta release, and there are some quircks and
 missing features for the time being:
 
-- No configuration options. If you want to change how the program
-invokes at, or ripgrep, for instance, you will have to change the source
-code for now.
-- If you are using multiple accounts in neomutt, midnight will assume
+- Minimal configuration options (a .draftboxes file). If you want to
+change how the program invokes at, for instance, you will have to change
+the source code for now.
+- ~~If you are using multiple accounts in neomutt, midnight will assume
 that each account has it's own file. This is important for reading the
 correct `folder` and `postponed` values inside of your config. If you
 don't have separate files for each account, then for now, you will need
 to either refactor your config, or change the source code of the program
-so it works with your setup.
+so it works with your setup.~~ You may now set a .draftboxes file (see
+Draftboxes section above for details). By default, `midnight` will first
+try to look for this file, then fallback to grepping your neomutt config
+if this file cannot be found.
 - ~~There is no state management, so there is no way to tell what job in
 atq correponds to what message in drafts.~~ We have state manage now!
 `midnight` keeps some metadata in it's own queue file. By default, it's

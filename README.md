@@ -14,7 +14,7 @@ cargo install midnight
 ### From source
 
 ```sh
-git clone https://library.cat/rory/midnight
+git clone https://github.com/pinecat/midnight
 cd midnight
 cargo install --path .
 ```
@@ -158,7 +158,7 @@ delete the message in the user's draftbox after it is sent.
 ## Building
 
 ```sh
-git clone https://library.cat/rory/midnight
+git clone https://github.com/pinecat/midnight
 cd midnight
 cargo build
 ```
